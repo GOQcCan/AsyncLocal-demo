@@ -1,0 +1,6 @@
+@AsyncLocal_demo.Api_HostAddress = http://localhost:5076
+
+GET {{AsyncLocal_demo.Api_HostAddress}}/orders/
+Accept: application/json
+
+###
