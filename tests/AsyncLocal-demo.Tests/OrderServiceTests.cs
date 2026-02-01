@@ -1,4 +1,5 @@
 ﻿using AsyncLocal_demo.Application.Orders;
+using AsyncLocal_demo.Core.BackgroundProcessing;
 using AsyncLocal_demo.Core.Context;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
@@ -10,6 +11,7 @@ public sealed class OrderServiceTests
 {
     private readonly Mock<IExecutionContext> _contextMock = new();
     private readonly Mock<IOrderRepository> _repositoryMock = new();
+    private readonly Mock<IBackgroundTaskQueue<Guid>> _queueMock = new();
     private readonly OrderService _sut;
 
     public OrderServiceTests()
@@ -17,6 +19,7 @@ public sealed class OrderServiceTests
         _sut = new OrderService(
             _contextMock.Object,
             _repositoryMock.Object,
+            _queueMock.Object,
             Mock.Of<ILogger<OrderService>>());
     }
 

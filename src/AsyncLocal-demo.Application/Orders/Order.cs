@@ -9,5 +9,10 @@ public sealed class Order
     public List<OrderItem> Items { get; set; } = [];
     public DateTime CreatedAt { get; set; }
 
+    // Champs de traitement
+    public OrderProcessingStatus Status { get; set; } =  OrderProcessingStatus.Pending;
+    public DateTime? ProcessedAt { get; set; }
+    public string? ProcessedBy { get; set; }
+
     public decimal TotalAmount => Items.Sum(i => i.TotalPrice);
 }

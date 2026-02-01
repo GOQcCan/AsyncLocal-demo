@@ -24,8 +24,14 @@ public sealed class OrderRepository(
 
     public async Task AddAsync(Order order, CancellationToken ct = default)
     {
-        order.TenantId = context.TenantId ?? throw new InvalidOperationException("TenantId required");
+        order.TenantId = context.TenantId ?? throw new InvalidOperationException("TenantId requis");
         db.Orders.Add(order);
+        await db.SaveChangesAsync(ct);
+    }
+
+    public async Task UpdateAsync(Order order, CancellationToken ct = default)
+    {
+        db.Orders.Update(order);
         await db.SaveChangesAsync(ct);
     }
 }

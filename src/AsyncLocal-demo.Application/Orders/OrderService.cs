@@ -1,4 +1,5 @@
-﻿using AsyncLocal_demo.Core.Context;
+﻿using AsyncLocal_demo.Core.BackgroundProcessing;
+using AsyncLocal_demo.Core.Context;
 using Microsoft.Extensions.Logging;
 
 namespace AsyncLocal_demo.Application.Orders;
@@ -6,6 +7,7 @@ namespace AsyncLocal_demo.Application.Orders;
 public sealed class OrderService(
     IExecutionContext context,
     IOrderRepository repository,
+    IBackgroundTaskQueue<Guid> processingQueue,
     ILogger<OrderService> logger) : IOrderService
 {
     public async Task<OrderDto> CreateAsync(CreateOrderCommand command, CancellationToken ct = default)
@@ -17,7 +19,7 @@ public sealed class OrderService(
         {
             Id = Guid.CreateVersion7(),
             TenantId = context.TenantId!,
-            CreatedBy = context.UserId ?? "anonymous",
+            CreatedBy = context.UserId ?? "anonyme",
             CorrelationId = context.CorrelationId!,
             Items = [..command.Items.Select(i => new OrderItem
             {
@@ -32,9 +34,12 @@ public sealed class OrderService(
 
         await repository.AddAsync(order, ct);
 
-        logger.LogInformation(
-            "Order {OrderId} created - Tenant: {TenantId}, User: {UserId}, Total: {Total:C}",
-            order.Id, order.TenantId, order.CreatedBy, order.TotalAmount);
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            logger.LogInformation(
+                "Commande {OrderId} créée – TenantId : {TenantId}, UserId : {UserId}, Total : {Total:C}",
+                order.Id, order.TenantId, order.CreatedBy, order.TotalAmount);
+        }
 
         return ToDto(order);
     }
@@ -57,13 +62,35 @@ public sealed class OrderService(
         return [..orders.Select(ToDto)];
     }
 
+    public async Task EnqueueForProcessingAsync(Guid orderId, CancellationToken ct = default)
+    {
+        ValidateContext();
+
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            logger.LogInformation(
+                "Mise en file de la commande {OrderId} pour un traitement en arrière‑plan – TenantId : {TenantId}, CorrelationId : {CorrelationId}",
+                orderId, context.TenantId, context.CorrelationId);
+        }
+
+        // Le contexte est automatiquement capturé par la file d’attente
+        await processingQueue.EnqueueAsync(orderId, ct);
+
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            logger.LogInformation(
+                "Commande {OrderId} mise en file – Taille de la file : {QueueSize}",
+                orderId, processingQueue.PendingCount);
+        }
+    }
+
     private void ValidateContext()
     {
         if (string.IsNullOrWhiteSpace(context.TenantId))
-            throw new UnauthorizedAccessException("TenantId is required");
+            throw new UnauthorizedAccessException("TenantId est requis");
 
         if (string.IsNullOrWhiteSpace(context.CorrelationId))
-            throw new InvalidOperationException("CorrelationId is required");
+            throw new InvalidOperationException("CorrelationId est requis");
     }
 
     private static OrderDto ToDto(Order o) => new(
