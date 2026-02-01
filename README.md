@@ -95,8 +95,6 @@ Cette démo inclut un système complet de traitement asynchrone en arrière-plan
 
 3. **Consommation asynchrone** : Le `BackgroundService` lit les éléments via `ReadAllAsync()`.
 
-4. **Restauration du contexte** : Avant traitement, le contexte est restauré dans `AsyncLocal` pour que les services appelés (logs, repositories) aient accès aux informations de la requête originale.
-
 ### Enregistrement des services
 ```csharp
 // Dans DependencyInjection.cs 
@@ -115,14 +113,11 @@ public async Task EnqueueForProcessingAsync(Guid orderId, CancellationToken ct =
 
 ### Points clés pour la préservation du contexte
 
-⚠️ **Problème résolu** : `AsyncLocal<T>` ne se propage pas automatiquement aux `BackgroundService` car ils s'exécutent sur des threads séparés du pool.
+`AsyncLocal<T>` ne se propage pas automatiquement aux `BackgroundService` car ils s'exécutent sur des threads séparés du pool.
 
 ✅ **Solution implémentée** :
 1. Capturer explicitement le contexte lors de `EnqueueAsync()`
 2. Stocker les valeurs dans un record immuable (`BackgroundWorkItem<T>`)
-3. Restaurer le contexte dans `AsyncLocal` avant chaque traitement
-
-#### 🔍 Pourquoi la restauration manuelle est nécessaire ?
 
 La propagation d'`AsyncLocal<T>` est liée au **contexte d'exécution (ExecutionContext)**, pas au pool de threads :
 
