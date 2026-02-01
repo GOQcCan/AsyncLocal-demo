@@ -45,11 +45,13 @@ Différence clé : AsyncLocal<T> vs ThreadLocal<T>
 ## Démarrage rapide
 
 ### 1) Restaurer / compiler
+**PowerShell :**
 ```powershell
 dotnet restore dotnet build
 ```
 
 ### 2) Lancer l’API
+**PowerShell :**
 ```powershell
 dotnet run --project src/AsyncLocal-demo.Api
 ```
@@ -57,6 +59,7 @@ dotnet run --project src/AsyncLocal-demo.Api
 Swagger est activé en environnement Développement.
 
 ### 3) Exécuter les tests
+**PowerShell :**
 ```powershell
 dotnet test
 ```
@@ -71,7 +74,7 @@ Règles appliquées par `OrderService` :
 - `CorrelationId` est obligatoire → sinon `InvalidOperationException`.
 - `UserId` est optionnel → valeur par défaut `anonyme`.
 
-## BONUS: Traitement en arrière-plan (Background Service)
+## **BONUS:** Traitement en arrière-plan (Background Service)
 
 Cette démo inclut un système complet de traitement asynchrone en arrière-plan qui **préserve le contexte d'exécution** (`AsyncLocal<T>`) entre la requête HTTP et le worker.
 
@@ -95,14 +98,14 @@ Cette démo inclut un système complet de traitement asynchrone en arrière-plan
 4. **Restauration du contexte** : Avant traitement, le contexte est restauré dans `AsyncLocal` pour que les services appelés (logs, repositories) aient accès aux informations de la requête originale.
 
 ### Enregistrement des services
-```cs
+```csharp
 // Dans DependencyInjection.cs 
 services.AddSingleton<IBackgroundTaskQueue<Guid>>(sp => new BackgroundTaskQueue<Guid>( sp.GetRequiredService<IExecutionContext>(), capacity: 100));
 services.AddHostedService<OrderProcessingBackgroundService>();
 ```
 
 ### Utilisation dans le code
-```cs
+```csharp
 // Mise en file d'une commande pour traitement en arrière-plan 
 public async Task EnqueueForProcessingAsync(Guid orderId, CancellationToken ct = default) { 
     // Le contexte est automatiquement capturé par la file d'attente 
@@ -130,42 +133,43 @@ La propagation d'`AsyncLocal<T>` est liée au **contexte d'exécution (Execution
 
 
 ## Exemple (création de commande)
-```console
-curl -X POST http://localhost:5000/api/orders 
-  -H "Content-Type: application/json" 
-  -H "X-Tenant-Id: dsf" 
-  -H "X-User-Id: drm7348" 
-  -d '{
-    "items": [
-      {"productId": "PORTABLE-001", "productName": "Dell XPS 15", "quantity": 1, "unitPrice": 1499.99},
-      {"productId": "SOURIS-001", "productName": "Logitech MX", "quantity": 2, "unitPrice": 79.99}
-    ]
-  }'
+**PowerShell :**
+```powershell
+curl.exe -X POST https://localhost:7207/api/orders `
+  -H "Content-Type: application/json" `
+  -H "X-Tenant-Id: dsf" `
+  -H "X-User-Id: drm7348" `
+  -d '{\"items\": [{\"productId\": \"PORTABLE-001\", \"productName\": \"Dell XPS 15\", \"quantity\": 1, \"unitPrice\": 1499.99},{\"productId\": \"SOURIS-001\", \"productName\": \"Logitech MX\", \"quantity\": 2, \"unitPrice\": 79.99}]}'
 ```
 
 ## Exemple (traitement de la commande)
-```console
-curl -X POST http://localhost:5000/api/orders/{id}/process 
-  -H "X-Tenant-Id: dsf" 
+**PowerShell :**
+```powershell
+curl.exe -X POST https://localhost:7207/api/orders/123e4567-e89b-12d3-a456-426614174000/process `
+  -H "X-Tenant-Id: dsf" `
   -H "X-User-Id: drm7348"
 ```
 
 ## Exemple (vérifier le statut de la commande)
-```console
-curl http://localhost:5000/api/orders/{id} 
-  -H "X-Tenant-Id: dsf" 
+**PowerShell :**
+```powershell
+curl.exe https://localhost:7207/api/orders/123e4567-e89b-12d3-a456-426614174000 `
+     -H "X-Tenant-Id: dsf" `
+     -H "X-User-Id: drm7348"
+```
+
+## Exemple (vérifier le contexte)
+**PowerShell :**
+```powershell
+curl.exe https://localhost:7207/api/orders/context `
+  -H "X-Tenant-Id: dsf" `
   -H "X-User-Id: drm7348"
 ```
 
-## Exemple (Vérifier le contexte)
-```console
-curl http://localhost:5000/api/orders/context 
-  -H "X-Tenant-Id: dsf" 
-  -H "X-User-Id: drm7348"
-```
-## Exemple (Lister les commandes)
-```console
-curl http://localhost:5000/api/orders 
+## Exemple (lister les commandes)
+**PowerShell :**
+```powershell
+curl.exe https://localhost:7207/api/orders `
   -H "X-Tenant-Id: dsf"
 ```
 ## Notes
