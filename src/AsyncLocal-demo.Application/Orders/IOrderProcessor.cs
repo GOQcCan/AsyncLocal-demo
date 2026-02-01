@@ -9,5 +9,5 @@ public interface IOrderProcessor
     /// <summary>
     /// Traite une commande (ex: validation, paiement, vérification des stocks).
     /// </summary>
-    Task<OrderProcessingResult> ProcessAsync(Guid orderId, CancellationToken ct = default);
+    Task<OrderProcessingResult> ProcessAsync(Guid orderId, string? userId, CancellationToken ct = default);
 }

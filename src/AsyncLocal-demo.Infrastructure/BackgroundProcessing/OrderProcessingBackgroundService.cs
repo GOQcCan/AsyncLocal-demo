@@ -9,13 +9,6 @@ namespace AsyncLocal_demo.Infrastructure.BackgroundProcessing;
 
 /// <summary>
 /// Service d'arrière-plan qui traite les commandes depuis la file d'attente.
-/// Démontre la restauration correcte du contexte AsyncLocal pour le traitement en arrière-plan.
-/// 
-/// Patron clé:
-/// 1. Les éléments de travail sont retirés avec leur contexte capturé
-/// 2. Un nouveau scope DI est créé pour chaque élément de travail
-/// 3. Le contexte AsyncLocal est restauré avant le traitement
-/// 4. Le processeur s'exécute avec le contexte de la requête originale
 /// </summary>
 public sealed class OrderProcessingBackgroundService(
     IBackgroundTaskQueue<Guid> queue,
@@ -65,21 +58,8 @@ public sealed class OrderProcessingBackgroundService(
         // Créer un nouveau scope pour cet élément de travail
         await using var scope = scopeFactory.CreateAsyncScope();
 
-        // Restaurer le contexte capturé dans AsyncLocal
-        var context = scope.ServiceProvider.GetRequiredService<IExecutionContext>();
-        RestoreContext(context, workItem);
-
-        if (logger.IsEnabled(LogLevel.Information))
-        {
-            logger.LogInformation(
-                "Contexte restauré pour la commande {OrderId} - TenantId: {TenantId}",
-                workItem.Payload,
-                context.TenantId);
-        }
-
-        // Traiter avec le contexte restauré
         var processor = scope.ServiceProvider.GetRequiredService<IOrderProcessor>();
-        var result = await processor.ProcessAsync(workItem.Payload, ct);
+        var result = await processor.ProcessAsync(workItem.Payload, workItem.UserId, ct);
 
         if (logger.IsEnabled(LogLevel.Information))
         {
@@ -89,12 +69,5 @@ public sealed class OrderProcessingBackgroundService(
                 result.Status,
                 result.Message);
         }
-    }
-
-    private static void RestoreContext(IExecutionContext context, IBackgroundWorkItem<Guid> workItem)
-    {
-        context.TenantId = workItem.TenantId;
-        context.UserId = workItem.UserId;
-        context.CorrelationId = workItem.CorrelationId;
     }
 }
