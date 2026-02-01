@@ -96,7 +96,7 @@ public sealed class OrderProcessorTests
     }
 
     [Fact]
-    public async Task ProcessAsync_WhenOrderIsAlreadyProcessing_ReturnsInProgress()
+    public async Task ProcessAsync_Devrait_Retourner_Processing_Quand_Commande_En_Cours()
     {
         // Arrange
         var orderId = Guid.NewGuid();

@@ -102,5 +102,6 @@ public sealed class OrderService(
         [.. o.Items.Select(i => new OrderItemDto(
             i.Id, i.ProductId, i.ProductName,
             i.Quantity, i.UnitPrice, i.TotalPrice))],
-        o.TotalAmount, o.CreatedAt);
+        o.TotalAmount, o.CreatedAt,
+        o.Status, o.ProcessedAt, o.ProcessedBy);
 }

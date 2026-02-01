@@ -7,4 +7,7 @@ public sealed record OrderDetailDto(
     string CorrelationId,
     IReadOnlyList<OrderItemDto> Items,
     decimal TotalAmount,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    OrderProcessingStatus Status,
+    DateTime? ProcessedAt,
+    string? ProcessedBy);

@@ -105,6 +105,7 @@ public sealed class OrderServiceTests
         _contextMock.Setup(x => x.CorrelationId).Returns("corr-123");
 
         var orderId = Guid.NewGuid();
+        var processedAt = DateTime.UtcNow;
         var order = new Order
         {
             Id = orderId,
@@ -112,7 +113,10 @@ public sealed class OrderServiceTests
             CreatedBy = "user-456",
             CorrelationId = "corr-123",
             Items = [new OrderItem { Id = Guid.NewGuid(), ProductId = "P1", ProductName = "Test", Quantity = 1, UnitPrice = 10m }],
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            Status = OrderProcessingStatus.Completed,
+            ProcessedAt = processedAt,
+            ProcessedBy = "user-456"
         };
 
         _repositoryMock.Setup(x => x.GetByIdAsync(orderId, It.IsAny<CancellationToken>()))
@@ -123,5 +127,8 @@ public sealed class OrderServiceTests
         result.Should().NotBeNull();
         result!.Id.Should().Be(orderId);
         result.Items.Should().HaveCount(1);
+        result.Status.Should().Be(OrderProcessingStatus.Completed);
+        result.ProcessedAt.Should().Be(processedAt);
+        result.ProcessedBy.Should().Be("user-456");
     }
 }

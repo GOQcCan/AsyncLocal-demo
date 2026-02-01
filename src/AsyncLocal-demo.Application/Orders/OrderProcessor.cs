@@ -52,7 +52,7 @@ public sealed class OrderProcessor(
         }
 
         // Simuler le traitement (paiement, inventaire, etc.)
-        await Task.Delay(100, ct);
+        await Task.Delay(5000, ct);
 
         order.Status = OrderProcessingStatus.Completed;
         order.ProcessedAt = DateTime.UtcNow;
