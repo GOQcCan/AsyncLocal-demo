@@ -58,6 +58,11 @@ public sealed class OrderProcessingBackgroundService(
         // Créer un nouveau scope pour cet élément de travail
         await using var scope = scopeFactory.CreateAsyncScope();
 
+        var contextAccessor = scope.ServiceProvider.GetRequiredService<IExecutionContextAccessor>();
+        contextAccessor.Current.TenantId = workItem.TenantId;
+        contextAccessor.Current.UserId = workItem.UserId;
+        contextAccessor.Current.CorrelationId = workItem.CorrelationId;
+
         var processor = scope.ServiceProvider.GetRequiredService<IOrderProcessor>();
         var result = await processor.ProcessAsync(workItem.Payload, workItem.UserId, ct);
 
