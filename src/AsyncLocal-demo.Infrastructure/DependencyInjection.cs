@@ -4,6 +4,7 @@ using AsyncLocal_demo.Core.Context;
 using AsyncLocal_demo.Infrastructure.BackgroundProcessing;
 using AsyncLocal_demo.Infrastructure.Context;
 using AsyncLocal_demo.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -18,6 +19,15 @@ public static class DependencyInjection
         services.AddSingleton<IExecutionContextAccessor, ExecutionContextAccessor>();
         services.AddSingleton<IExecutionContext>(sp =>
             sp.GetRequiredService<IExecutionContextAccessor>().Current);
+
+        services.AddSingleton<HttpContextAccessor>();
+
+        // HttpContext providers
+        services.AddSingleton<IHttpContextProvider, DefaultHttpContextProvider>();
+        services.AddSingleton<IHttpContextProvider, ExecutionContextHttpContextProvider>();
+
+        // Composite comme implémentation de IHttpContextAccessor
+        services.AddSingleton<IHttpContextAccessor, CompositeHttpContextAccessor>();
 
         // Base de données
         services.AddDbContext<AppDbContext>(opt =>
