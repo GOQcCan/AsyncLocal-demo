@@ -1,21 +1,26 @@
 using AsyncLocal_demo.Application.Orders;
 using AsyncLocal_demo.Core.Context;
 using FluentAssertions;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Moq;
+using System.Security.Claims;
 
 namespace AsyncLocal_demo.Tests;
 
 public sealed class OrderProcessorTests
 {
     private readonly Mock<IOrderRepository> _repositoryMock = new();
+    private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock = new();
     private readonly OrderProcessor _sut;
 
     public OrderProcessorTests()
     {
         _sut = new OrderProcessor(
             _repositoryMock.Object,
-            Mock.Of<ILogger<OrderProcessor>>());
+            _httpContextAccessorMock.Object,
+            new Mock<ILogger<OrderProcessor>>().Object
+        );
     }
 
     [Fact]
@@ -98,6 +103,124 @@ public sealed class OrderProcessorTests
             It.IsAny<Order>(), 
             It.IsAny<CancellationToken>()), Times.Never);
     }
+
+    [Fact]
+    public async Task ProcessAsync_Devrait_Utiliser_UserId_Du_HttpContext_Quand_Non_Fourni()
+    {
+        // Arrange
+        var orderId = Guid.NewGuid();
+        var contextUserId = "context-user-id";
+        var order = new Order
+        {
+            Id = orderId,
+            TenantId = "tenant-123",
+            CreatedBy = "creator",
+            CorrelationId = "corr-123",
+            Status = OrderProcessingStatus.Pending
+        };
+
+        SetupHttpContext(userId: contextUserId, tenantId: "tenant-123", correlationId: "corr-123");
+
+        _repositoryMock.Setup(x => x.GetByIdAsync(orderId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(order);
+
+        // Act - userId est null, doit utiliser celui du HttpContext
+        var result = await _sut.ProcessAsync(orderId, userId: null);
+
+        // Assert
+        result.Status.Should().Be(OrderProcessingStatus.Completed);
+        _repositoryMock.Verify(x => x.UpdateAsync(
+            It.Is<Order>(o => o.ProcessedBy == contextUserId),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_Devrait_Propager_CorrelationId_Depuis_HttpContext()
+    {
+        // Arrange
+        var orderId = Guid.NewGuid();
+        var correlationId = "test-correlation-id";
+        var order = new Order
+        {
+            Id = orderId,
+            TenantId = "tenant-123",
+            CreatedBy = "user",
+            CorrelationId = correlationId,
+            Status = OrderProcessingStatus.Pending
+        };
+
+        SetupHttpContext(userId: "user-123", tenantId: "tenant-123", correlationId: correlationId);
+
+        _repositoryMock.Setup(x => x.GetByIdAsync(orderId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(order);
+
+        // Act
+        var result = await _sut.ProcessAsync(orderId, "user-123");
+
+        // Assert
+        result.Status.Should().Be(OrderProcessingStatus.Completed);
+        // Le CorrelationId est accessible via HttpContext.TraceIdentifier
+        _httpContextAccessorMock.Verify(x => x.HttpContext, Times.AtLeastOnce);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_Devrait_Fonctionner_Sans_HttpContext()
+    {
+        // Arrange
+        var orderId = Guid.NewGuid();
+        var userId = "explicit-user";
+        var order = new Order
+        {
+            Id = orderId,
+            TenantId = "tenant-123",
+            CreatedBy = "creator",
+            CorrelationId = "corr-123",
+            Status = OrderProcessingStatus.Pending
+        };
+
+        // HttpContext est null (cas du test unitaire sans contexte)
+        _httpContextAccessorMock.Setup(x => x.HttpContext).Returns((HttpContext)null!);
+
+        _repositoryMock.Setup(x => x.GetByIdAsync(orderId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(order);
+
+        // Act
+        var result = await _sut.ProcessAsync(orderId, userId);
+
+        // Assert
+        result.Status.Should().Be(OrderProcessingStatus.Completed);
+        _repositoryMock.Verify(x => x.UpdateAsync(
+            It.Is<Order>(o => o.ProcessedBy == userId),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    #region Helpers
+
+    private void SetupHttpContext(string? userId = null, string? tenantId = null, string? correlationId = null)
+    {
+        var claims = new List<Claim>();
+
+        if (userId is not null)
+            claims.Add(new Claim(ClaimTypes.NameIdentifier, userId));
+
+        if (tenantId is not null)
+            claims.Add(new Claim("tenant_id", tenantId));
+
+        var identity = new ClaimsIdentity(claims, "Test");
+        var principal = new ClaimsPrincipal(identity);
+
+        var httpContext = new DefaultHttpContext
+        {
+            User = principal
+        };
+
+        if (correlationId is not null)
+            httpContext.TraceIdentifier = correlationId;
+
+        _httpContextAccessorMock.Setup(x => x.HttpContext).Returns(httpContext);
+    }
+
+    #endregion
 }
 
 public sealed class BackgroundWorkItemTests

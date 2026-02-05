@@ -1,33 +1,31 @@
 ﻿using AsyncLocal_demo.Core.Context;
+using System.Security.Claims;
 
 namespace AsyncLocal_demo.Api;
 
+/// <summary>
+/// Middleware qui capture le contexte HTTP et le stocke dans l'ExecutionContext.
+/// Permet aux Background Services de récupérer le contexte original.
+/// </summary>
 public sealed class ExecutionContextMiddleware(RequestDelegate next)
 {
-    public const string CorrelationIdHeader = "X-Correlation-Id";
-    public const string TenantIdHeader = "X-Tenant-Id";
-    public const string UserIdHeader = "X-User-Id";
-
-    public async Task InvokeAsync(HttpContext http, IExecutionContext context)
+    public async Task InvokeAsync(HttpContext httpContext, IExecutionContextAccessor contextAccessor)
     {
+        // Capture le contexte de la requête HTTP
+        var ctx = contextAccessor.Current;
+
+        ctx.UserId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        ctx.TenantId = httpContext.User.FindFirst("tenant_id")?.Value
+                     ?? httpContext.Request.Headers["X-Tenant-Id"].FirstOrDefault();
+        ctx.CorrelationId = httpContext.TraceIdentifier;
+
         try
         {
-            context.CorrelationId = http.Request.Headers[CorrelationIdHeader].FirstOrDefault()
-                ?? Guid.CreateVersion7().ToString("N")[..16].ToUpperInvariant();
-            context.TenantId = http.Request.Headers[TenantIdHeader].FirstOrDefault();
-            context.UserId = http.Request.Headers[UserIdHeader].FirstOrDefault();
-
-            http.Response.OnStarting(() =>
-            {
-                http.Response.Headers[CorrelationIdHeader] = context.CorrelationId;
-                return Task.CompletedTask;
-            });
-
-            await next(http);
+            await next(httpContext);
         }
         finally
         {
-            context.Clear();
+            ctx.Clear(); // Nettoie le contexte après la requête
         }
     }
 }

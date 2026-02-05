@@ -1,16 +1,22 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
+using System.Security.Claims;
 
 namespace AsyncLocal_demo.Application.Orders;
 
 /// <summary>
-/// Implémentation du processeur de commandes.
+/// Implémentation du processeur de commandes avec accès au contexte via IHttpContextAccessor.
 /// </summary>
 public sealed class OrderProcessor(
     IOrderRepository repository,
+    IHttpContextAccessor httpContextAccessor,
     ILogger<OrderProcessor> logger) : IOrderProcessor
 {
     public async Task<OrderProcessingResult> ProcessAsync(Guid orderId, string? userId, CancellationToken ct = default)
     {
+        // Récupère le contexte (HTTP réel OU synthétique depuis AsyncLocal)
+        var httpContext = httpContextAccessor.HttpContext;
+        var currentUserId = userId ?? httpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         var order = await repository.GetByIdAsync(orderId, ct);
 
         if (order is null)
@@ -39,7 +45,7 @@ public sealed class OrderProcessor(
 
         order.Status = OrderProcessingStatus.Completed;
         order.ProcessedAt = DateTime.UtcNow;
-        order.ProcessedBy = userId;
+        order.ProcessedBy = currentUserId;
 
         await repository.UpdateAsync(order, ct);
 
