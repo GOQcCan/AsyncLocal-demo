@@ -172,8 +172,7 @@ curl.exe https://localhost:7207/api/orders `
 - Les identifiants utilisent `Guid.CreateVersion7()`.
 - Le montant total est calculé à partir des lignes de commande.
 - Le `BackgroundService` crée un nouveau scope DI pour chaque élément de travail afin de respecter le cycle de vie des services `Scoped`.
-
-
-![](HttpContextAccessor Flow.png)
-
-![](HttpContextAccessor Sequence.png)
+<br/><br/><br/>
+![](HttpContextAccessor_Flow.png)
+<br/><br/><br/>
+![](HttpContextAccessor_Sequence.png)
