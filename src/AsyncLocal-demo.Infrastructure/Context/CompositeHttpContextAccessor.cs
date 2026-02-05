@@ -10,7 +10,7 @@ namespace AsyncLocal_demo.Infrastructure.Context;
 public sealed class CompositeHttpContextAccessor(IEnumerable<IHttpContextProvider> providers) : IHttpContextAccessor
 {
     private static readonly AsyncLocal<HttpContext?> _explicitContext = new();
-    private readonly IEnumerable<IHttpContextProvider> _providers = providers.OrderBy(p => p.Priority);
+    private readonly IHttpContextProvider[] _providers = [.. providers.OrderBy(p => p.Priority)];
 
     public HttpContext? HttpContext
     {
