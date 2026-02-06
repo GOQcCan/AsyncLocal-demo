@@ -1,4 +1,5 @@
-﻿using AsyncLocal_demo.Application.Orders;
+﻿using AsyncLocal.ExecutionContext.Abstractions;
+using AsyncLocal_demo.Application.Orders;
 using AsyncLocal_demo.Core.Context;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,7 +10,7 @@ public sealed class OrderRepository(
     IExecutionContext context) : IOrderRepository
 {
     private IQueryable<Order> TenantOrders => db.Orders
-        .Where(o => o.TenantId == context.TenantId);
+        .Where(o => o.TenantId == context.GetTenantId());
 
     public async Task<Order?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
         await TenantOrders.Include(o => o.Items).FirstOrDefaultAsync(o => o.Id == id, ct);
@@ -24,7 +25,7 @@ public sealed class OrderRepository(
 
     public async Task AddAsync(Order order, CancellationToken ct = default)
     {
-        order.TenantId = context.TenantId ?? throw new InvalidOperationException("TenantId requis");
+        order.TenantId = context.GetTenantId() ?? throw new InvalidOperationException("TenantId requis");
         db.Orders.Add(order);
         await db.SaveChangesAsync(ct);
     }

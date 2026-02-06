@@ -11,4 +11,8 @@
     <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.3.9" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\package\AsyncLocal.ExecutionContext.Abstractions\AsyncLocal.ExecutionContext.Abstractions.csproj" />
+  </ItemGroup>
+
 </Project>

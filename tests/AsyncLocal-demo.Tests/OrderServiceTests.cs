@@ -1,6 +1,6 @@
-﻿using AsyncLocal_demo.Application.Orders;
+﻿using AsyncLocal.ExecutionContext.Abstractions;
+using AsyncLocal_demo.Application.Orders;
 using AsyncLocal_demo.Core.BackgroundProcessing;
-using AsyncLocal_demo.Core.Context;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -26,8 +26,8 @@ public sealed class OrderServiceTests
     [Fact]
     public async Task CreerAsync_Devrait_Creer_Commande_Avec_Contexte()
     {
-        _contextMock.Setup(x => x.TenantId).Returns("tenant-123");
-        _contextMock.Setup(x => x.UserId).Returns("user-456");
+        _contextMock.Setup(x => x.Get<string>("TenantId")).Returns("tenant-123");
+        _contextMock.Setup(x => x.Get<string>("UserId")).Returns("user-456");
         _contextMock.Setup(x => x.CorrelationId).Returns("corr-789");
 
         var command = new CreateOrderCommand
@@ -54,7 +54,7 @@ public sealed class OrderServiceTests
     [Fact]
     public async Task CreerAsync_Sans_TenantId_Devrait_Lever_Exception()
     {
-        _contextMock.Setup(x => x.TenantId).Returns((string?)null);
+        _contextMock.Setup(x => x.Get<string>("TenantId")).Returns((string?)null);
         _contextMock.Setup(x => x.CorrelationId).Returns("corr-123");
 
         var command = new CreateOrderCommand
@@ -71,7 +71,7 @@ public sealed class OrderServiceTests
     [Fact]
     public async Task CreerAsync_Sans_CorrelationId_Devrait_Lever_Exception()
     {
-        _contextMock.Setup(x => x.TenantId).Returns("tenant-123");
+        _contextMock.Setup(x => x.Get<string>("TenantId")).Returns("tenant-123");
         _contextMock.Setup(x => x.CorrelationId).Returns((string?)null);
 
         var command = new CreateOrderCommand
@@ -88,7 +88,7 @@ public sealed class OrderServiceTests
     [Fact]
     public async Task ObtenirParIdAsync_Devrait_Retourner_Null_Quand_Non_Trouve()
     {
-        _contextMock.Setup(x => x.TenantId).Returns("tenant-123");
+        _contextMock.Setup(x => x.Get<string>("TenantId")).Returns("tenant-123");
         _contextMock.Setup(x => x.CorrelationId).Returns("corr-123");
         _repositoryMock.Setup(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((Order?)null);
@@ -101,7 +101,7 @@ public sealed class OrderServiceTests
     [Fact]
     public async Task ObtenirParIdAsync_Devrait_Retourner_Commande_Quand_Trouvee()
     {
-        _contextMock.Setup(x => x.TenantId).Returns("tenant-123");
+        _contextMock.Setup(x => x.Get<string>("TenantId")).Returns("tenant-123");
         _contextMock.Setup(x => x.CorrelationId).Returns("corr-123");
 
         var orderId = Guid.NewGuid();

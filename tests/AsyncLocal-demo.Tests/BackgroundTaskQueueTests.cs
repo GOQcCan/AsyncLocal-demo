@@ -1,4 +1,4 @@
-using AsyncLocal_demo.Core.Context;
+using AsyncLocal.ExecutionContext.Abstractions;
 using AsyncLocal_demo.Infrastructure.BackgroundProcessing;
 using FluentAssertions;
 using Moq;
@@ -13,8 +13,8 @@ public sealed class BackgroundTaskQueueTests
     public async Task EnqueueAsync_Devrait_Capturer_Le_Contexte_Actuel()
     {
         // Arrange
-        _contextMock.Setup(x => x.TenantId).Returns("tenant-123");
-        _contextMock.Setup(x => x.UserId).Returns("user-456");
+        _contextMock.Setup(x => x.Get<string>("TenantId")).Returns("tenant-123");
+        _contextMock.Setup(x => x.Get<string>("UserId")).Returns("user-456");
         _contextMock.Setup(x => x.CorrelationId).Returns("corr-789");
 
         var queue = new BackgroundTaskQueue<Guid>(_contextMock.Object);
@@ -36,7 +36,7 @@ public sealed class BackgroundTaskQueueTests
     public async Task EnqueueAsync_Devrait_Incrementer_PendingCount()
     {
         // Arrange
-        _contextMock.Setup(x => x.TenantId).Returns("tenant-123");
+        _contextMock.Setup(x => x.Get<string>("TenantId")).Returns("tenant-123");
         var queue = new BackgroundTaskQueue<Guid>(_contextMock.Object);
 
         // Act
@@ -52,7 +52,7 @@ public sealed class BackgroundTaskQueueTests
     public async Task DequeueAsync_Devrait_Decrementer_PendingCount()
     {
         // Arrange
-        _contextMock.Setup(x => x.TenantId).Returns("tenant-123");
+        _contextMock.Setup(x => x.Get<string>("TenantId")).Returns("tenant-123");
         var queue = new BackgroundTaskQueue<Guid>(_contextMock.Object);
 
         await queue.EnqueueAsync(Guid.NewGuid());
@@ -69,7 +69,7 @@ public sealed class BackgroundTaskQueueTests
     public async Task DequeueAsync_Devrait_Respecter_Ordre_FIFO()
     {
         // Arrange
-        _contextMock.Setup(x => x.TenantId).Returns("tenant-123");
+        _contextMock.Setup(x => x.Get<string>("TenantId")).Returns("tenant-123");
         var queue = new BackgroundTaskQueue<Guid>(_contextMock.Object);
 
         var first = Guid.NewGuid();
@@ -90,7 +90,7 @@ public sealed class BackgroundTaskQueueTests
     public async Task ReadAllAsync_Devrait_Retourner_Tous_Les_Items()
     {
         // Arrange
-        _contextMock.Setup(x => x.TenantId).Returns("tenant-123");
+        _contextMock.Setup(x => x.Get<string>("TenantId")).Returns("tenant-123");
         var queue = new BackgroundTaskQueue<Guid>(_contextMock.Object);
         var ids = new[] { Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid() };
 
@@ -114,8 +114,8 @@ public sealed class BackgroundTaskQueueTests
     public async Task EnqueueAsync_Avec_Contexte_Null_Devrait_Capturer_Valeurs_Nulles()
     {
         // Arrange
-        _contextMock.Setup(x => x.TenantId).Returns((string?)null);
-        _contextMock.Setup(x => x.UserId).Returns((string?)null);
+        _contextMock.Setup(x => x.Get<string>("TenantId")).Returns((string?)null);
+        _contextMock.Setup(x => x.Get<string>("UserId")).Returns((string?)null);
         _contextMock.Setup(x => x.CorrelationId).Returns((string?)null);
 
         var queue = new BackgroundTaskQueue<Guid>(_contextMock.Object);

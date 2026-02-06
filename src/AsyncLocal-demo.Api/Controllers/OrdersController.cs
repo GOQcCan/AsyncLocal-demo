@@ -1,3 +1,4 @@
+using AsyncLocal.ExecutionContext.Abstractions;
 using AsyncLocal_demo.Application.Orders;
 using AsyncLocal_demo.Core.BackgroundProcessing;
 using AsyncLocal_demo.Core.Context;
@@ -53,7 +54,7 @@ public sealed class OrdersController(
 
         return Accepted(new EnqueuedResponse(
             id,
-            context.TenantId!,
+            context.GetTenantId()!,
             context.CorrelationId!,
             processingQueue.PendingCount,
             "Commande mise en file d'attente pour traitement en arrière-plan. Le contexte sera préservé."));
@@ -64,8 +65,8 @@ public sealed class OrdersController(
     public IActionResult GetContext() => Ok(new
     {
         context.CorrelationId,
-        context.TenantId,
-        context.UserId,
+        TenantId = context.GetTenantId(),
+        UserId = context.GetUserId(),
         Timestamp = DateTime.UtcNow
     });
 

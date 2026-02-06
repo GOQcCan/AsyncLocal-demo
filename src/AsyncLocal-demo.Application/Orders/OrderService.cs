@@ -1,4 +1,5 @@
-﻿using AsyncLocal_demo.Core.BackgroundProcessing;
+﻿using AsyncLocal.ExecutionContext.Abstractions;
+using AsyncLocal_demo.Core.BackgroundProcessing;
 using AsyncLocal_demo.Core.Context;
 using Microsoft.Extensions.Logging;
 
@@ -18,8 +19,8 @@ public sealed class OrderService(
         var order = new Order
         {
             Id = Guid.CreateVersion7(),
-            TenantId = context.TenantId!,
-            CreatedBy = context.UserId ?? "anonyme",
+            TenantId = context.GetTenantId()!,
+            CreatedBy = context.GetUserId() ?? "anonyme",
             CorrelationId = context.CorrelationId!,
             Items = [..command.Items.Select(i => new OrderItem
             {
@@ -70,10 +71,10 @@ public sealed class OrderService(
         {
             logger.LogInformation(
                 "Mise en file de la commande {OrderId} pour un traitement en arrière‑plan – TenantId : {TenantId}, CorrelationId : {CorrelationId}",
-                orderId, context.TenantId, context.CorrelationId);
+                orderId, context.GetTenantId(), context.CorrelationId);
         }
 
-        // Le contexte est automatiquement capturé par la file d’attente
+        // Le contexte est automatiquement capturé par la file d'attente
         await processingQueue.EnqueueAsync(orderId, ct);
 
         if (logger.IsEnabled(LogLevel.Information))
@@ -86,7 +87,7 @@ public sealed class OrderService(
 
     private void ValidateContext()
     {
-        if (string.IsNullOrWhiteSpace(context.TenantId))
+        if (string.IsNullOrWhiteSpace(context.GetTenantId()))
             throw new UnauthorizedAccessException("TenantId est requis");
 
         if (string.IsNullOrWhiteSpace(context.CorrelationId))

@@ -1,12 +1,11 @@
-using System.Threading.Channels;
+using AsyncLocal.ExecutionContext.Abstractions;
 using AsyncLocal_demo.Core.BackgroundProcessing;
-using AsyncLocal_demo.Core.Context;
+using System.Threading.Channels;
 
 namespace AsyncLocal_demo.Infrastructure.BackgroundProcessing;
 
 /// <summary>
-/// File d'attente de tâches en arrière-plan thread-safe utilisant System.Threading.Channels.
-/// Capture automatiquement le contexte d'exécution lors de la mise en file d'attente des éléments de travail.
+/// File d'attente de tâches en arrière-plan thread-safe.
 /// </summary>
 public sealed class BackgroundTaskQueue<TPayload> : IBackgroundTaskQueue<TPayload>
 {

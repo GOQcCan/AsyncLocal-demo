@@ -1,3 +1,4 @@
+using AsyncLocal.ExecutionContext.Abstractions;
 using AsyncLocal_demo.Application.Orders;
 using AsyncLocal_demo.Core.Context;
 using FluentAssertions;
@@ -230,8 +231,8 @@ public sealed class BackgroundWorkItemTests
     {
         // Arrange
         var contextMock = new Mock<IExecutionContext>();
-        contextMock.Setup(x => x.TenantId).Returns("tenant-123");
-        contextMock.Setup(x => x.UserId).Returns("user-456");
+        contextMock.Setup(x => x.Get<string>("TenantId")).Returns("tenant-123");
+        contextMock.Setup(x => x.Get<string>("UserId")).Returns("user-456");
         contextMock.Setup(x => x.CorrelationId).Returns("corr-789");
 
         var payload = Guid.NewGuid();

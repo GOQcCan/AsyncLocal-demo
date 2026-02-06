@@ -1,11 +1,11 @@
-using AsyncLocal_demo.Core.Context;
+using AsyncLocal.ExecutionContext.Abstractions;
 using Microsoft.AspNetCore.Http;
 
-namespace AsyncLocal_demo.Infrastructure.Context;
+namespace AsyncLocal.ExecutionContext;
 
 /// <summary>
 /// Composite qui délègue aux providers selon leur priorité.
-/// Ouvert à l'extension, fermé à la modification.
+/// Ouvert à l'extension, fermé à la modification (Open/Closed Principle).
 /// </summary>
 public sealed class CompositeHttpContextAccessor(IEnumerable<IHttpContextProvider> providers) : IHttpContextAccessor
 {

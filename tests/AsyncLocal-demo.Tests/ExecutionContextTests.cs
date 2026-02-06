@@ -1,12 +1,13 @@
-﻿using AsyncLocal_demo.Core.Context;
-using AsyncLocal_demo.Infrastructure.Context;
+﻿using AsyncLocal.ExecutionContext;
+using AsyncLocal.ExecutionContext.Abstractions;
+using AsyncLocal_demo.Core.Context;
 using FluentAssertions;
 
 namespace AsyncLocal_demo.Tests;
 
 public sealed class ExecutionContextTests
 {
-    private readonly IExecutionContextAccessor _accessor = new ExecutionContextAccessor();
+    private readonly IExecutionContextAccessor _accessor = new ExecutionContextAccessor(new AsyncLocalExecutionContext());
 
     [Fact]
     public void Devrait_Stocker_Et_Recuperer_Les_Valeurs()
@@ -14,12 +15,12 @@ public sealed class ExecutionContextTests
         var context = _accessor.Current;
 
         context.CorrelationId = "test-correlation";
-        context.TenantId = "test-tenant";
-        context.UserId = "test-user";
+        context.SetTenantId("test-tenant");
+        context.SetUserId("test-user");
 
         context.CorrelationId.Should().Be("test-correlation");
-        context.TenantId.Should().Be("test-tenant");
-        context.UserId.Should().Be("test-user");
+        context.GetTenantId().Should().Be("test-tenant");
+        context.GetUserId().Should().Be("test-user");
 
         context.Clear();
     }
@@ -43,7 +44,7 @@ public sealed class ExecutionContextTests
     public async Task Devrait_Se_Propager_A_Travers_Les_Appels_Asynchrones()
     {
         var context = _accessor.Current;
-        context.TenantId = "async-tenant";
+        context.SetTenantId("async-tenant");
 
         var result = await ObtenirTenantAsync();
 
@@ -58,11 +59,11 @@ public sealed class ExecutionContextTests
         var tasks = Enumerable.Range(1, 50).Select(async i =>
         {
             var ctx = _accessor.Current;
-            ctx.TenantId = $"tenant-{i}";
+            ctx.SetTenantId($"tenant-{i}");
 
             await Task.Delay(Random.Shared.Next(5, 20));
 
-            return ctx.TenantId == $"tenant-{i}";
+            return ctx.GetTenantId() == $"tenant-{i}";
         });
 
         var results = await Task.WhenAll(tasks);
@@ -76,19 +77,19 @@ public sealed class ExecutionContextTests
         var context = _accessor.Current;
 
         context.CorrelationId = "to-clear";
-        context.TenantId = "to-clear";
+        context.SetTenantId("to-clear");
         context.Set("custom", "value");
 
         context.Clear();
 
         context.CorrelationId.Should().BeNull();
-        context.TenantId.Should().BeNull();
+        context.GetTenantId().Should().BeNull();
         context.Get<string>("custom").Should().BeNull();
     }
 
     private async Task<string?> ObtenirTenantAsync()
     {
         await Task.Delay(10);
-        return _accessor.Current.TenantId;
+        return _accessor.Current.GetTenantId();
     }
 }

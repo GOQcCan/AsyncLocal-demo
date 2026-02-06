@@ -1,3 +1,5 @@
+using AsyncLocal.ExecutionContext;
+using AsyncLocal.ExecutionContext.Abstractions;
 using AsyncLocal_demo.Core.Context;
 using AsyncLocal_demo.Infrastructure.Context;
 using FluentAssertions;
@@ -9,7 +11,7 @@ namespace AsyncLocal_demo.Tests;
 
 public sealed class CompositeHttpContextAccessorTests
 {
-    private readonly IExecutionContextAccessor _executionContextAccessor = new ExecutionContextAccessor();
+    private readonly IExecutionContextAccessor _executionContextAccessor = new ExecutionContextAccessor(new AsyncLocalExecutionContext());
 
     [Fact]
     public void Devrait_Retourner_HttpContext_Explicite_En_Priorite()
@@ -90,11 +92,12 @@ public sealed class CompositeHttpContextAccessorTests
     {
         // Arrange
         var context = _executionContextAccessor.Current;
-        context.UserId = "user-123";
-        context.TenantId = "tenant-456";
+        context.SetUserId("user-123");
+        context.SetTenantId("tenant-456");
         context.CorrelationId = "corr-789";
 
-        var provider = new ExecutionContextHttpContextProvider(_executionContextAccessor);
+        var httpContextBuilder = new DemoSyntheticHttpContextBuilder();
+        var provider = new ExecutionContextHttpContextProvider(_executionContextAccessor, httpContextBuilder);
 
         // Act
         var httpContext = provider.GetHttpContext();
@@ -115,7 +118,8 @@ public sealed class CompositeHttpContextAccessorTests
         var context = _executionContextAccessor.Current;
         context.Clear();
 
-        var provider = new ExecutionContextHttpContextProvider(_executionContextAccessor);
+        var httpContextBuilder = new DemoSyntheticHttpContextBuilder();
+        var provider = new ExecutionContextHttpContextProvider(_executionContextAccessor, httpContextBuilder);
 
         // Act
         var httpContext = provider.GetHttpContext();
@@ -129,10 +133,11 @@ public sealed class CompositeHttpContextAccessorTests
     {
         // Arrange
         var context = _executionContextAccessor.Current;
-        context.UserId = "bg-user";
-        context.TenantId = "bg-tenant";
+        context.SetUserId("bg-user");
+        context.SetTenantId("bg-tenant");
 
-        var executionContextProvider = new ExecutionContextHttpContextProvider(_executionContextAccessor);
+        var httpContextBuilder = new DemoSyntheticHttpContextBuilder();
+        var executionContextProvider = new ExecutionContextHttpContextProvider(_executionContextAccessor, httpContextBuilder);
         var defaultProvider = CreateMockProvider(priority: 0, context: null);
 
         var accessor = new CompositeHttpContextAccessor([defaultProvider, executionContextProvider]);
@@ -154,7 +159,8 @@ public sealed class CompositeHttpContextAccessorTests
     public async Task Devrait_Isoler_Contextes_Paralleles_Dans_BackgroundService()
     {
         // Arrange
-        var executionContextProvider = new ExecutionContextHttpContextProvider(_executionContextAccessor);
+        var httpContextBuilder = new DemoSyntheticHttpContextBuilder();
+        var executionContextProvider = new ExecutionContextHttpContextProvider(_executionContextAccessor, httpContextBuilder);
         var defaultProvider = CreateMockProvider(priority: 0, context: null);
         var accessor = new CompositeHttpContextAccessor([defaultProvider, executionContextProvider]);
 
@@ -162,8 +168,8 @@ public sealed class CompositeHttpContextAccessorTests
         var tasks = Enumerable.Range(1, 20).Select(async i =>
         {
             var ctx = _executionContextAccessor.Current;
-            ctx.UserId = $"user-{i}";
-            ctx.TenantId = $"tenant-{i}";
+            ctx.SetUserId($"user-{i}");
+            ctx.SetTenantId($"tenant-{i}");
 
             await Task.Delay(Random.Shared.Next(5, 15));
 
@@ -182,10 +188,11 @@ public sealed class CompositeHttpContextAccessorTests
 
     private IHttpContextProvider[] CreateProviders()
     {
+        var httpContextBuilder = new DemoSyntheticHttpContextBuilder();
         return
         [
             CreateMockProvider(priority: 0, context: null),
-            new ExecutionContextHttpContextProvider(_executionContextAccessor)
+            new ExecutionContextHttpContextProvider(_executionContextAccessor, httpContextBuilder)
         ];
     }
 

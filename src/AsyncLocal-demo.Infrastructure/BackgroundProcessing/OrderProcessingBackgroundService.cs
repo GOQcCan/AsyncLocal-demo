@@ -1,4 +1,5 @@
-﻿using AsyncLocal_demo.Application.Orders;
+﻿using AsyncLocal.ExecutionContext.Abstractions;
+using AsyncLocal_demo.Application.Orders;
 using AsyncLocal_demo.Core.BackgroundProcessing;
 using AsyncLocal_demo.Core.Context;
 using Microsoft.Extensions.DependencyInjection;
@@ -55,13 +56,15 @@ public sealed class OrderProcessingBackgroundService(
                 workItem.CreatedAt);
         }
 
-        // Créer un nouveau scope pour cet élément de travail
         await using var scope = scopeFactory.CreateAsyncScope();
 
         var contextAccessor = scope.ServiceProvider.GetRequiredService<IExecutionContextAccessor>();
-        contextAccessor.Current.TenantId = workItem.TenantId;
-        contextAccessor.Current.UserId = workItem.UserId;
-        contextAccessor.Current.CorrelationId = workItem.CorrelationId;
+        var ctx = contextAccessor.Current;
+        
+        // Utiliser les extensions pour définir les propriétés métier
+        ctx.SetTenantId(workItem.TenantId);
+        ctx.SetUserId(workItem.UserId);
+        ctx.CorrelationId = workItem.CorrelationId;
 
         var processor = scope.ServiceProvider.GetRequiredService<IOrderProcessor>();
         var result = await processor.ProcessAsync(workItem.Payload, workItem.UserId, ct);

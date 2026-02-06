@@ -1,6 +1,7 @@
-﻿using AsyncLocal_demo.Core.Context;
+using AsyncLocal.ExecutionContext.Abstractions;
+using AsyncLocal.ExecutionContext.Internal;
 
-namespace AsyncLocal_demo.Infrastructure.Context;
+namespace AsyncLocal.ExecutionContext;
 
 public sealed class AsyncLocalExecutionContext : IExecutionContext
 {
@@ -16,18 +17,6 @@ public sealed class AsyncLocalExecutionContext : IExecutionContext
     {
         get => Current.CorrelationId;
         set => Current = Current with { CorrelationId = value };
-    }
-
-    public string? UserId
-    {
-        get => Current.UserId;
-        set => Current = Current with { UserId = value };
-    }
-
-    public string? TenantId
-    {
-        get => Current.TenantId;
-        set => Current = Current with { TenantId = value };
     }
 
     public T? Get<T>(string key)

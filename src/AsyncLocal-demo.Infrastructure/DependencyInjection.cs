@@ -1,10 +1,10 @@
-﻿using AsyncLocal_demo.Application.Orders;
+﻿using AsyncLocal.ExecutionContext;
+using AsyncLocal.ExecutionContext.Abstractions;
+using AsyncLocal_demo.Application.Orders;
 using AsyncLocal_demo.Core.BackgroundProcessing;
-using AsyncLocal_demo.Core.Context;
 using AsyncLocal_demo.Infrastructure.BackgroundProcessing;
 using AsyncLocal_demo.Infrastructure.Context;
 using AsyncLocal_demo.Infrastructure.Persistence;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -15,19 +15,8 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services)
     {
-        // Contexte - Singleton car AsyncLocal est statique
-        services.AddSingleton<IExecutionContextAccessor, ExecutionContextAccessor>();
-        services.AddSingleton<IExecutionContext>(sp =>
-            sp.GetRequiredService<IExecutionContextAccessor>().Current);
-
-        services.AddSingleton<HttpContextAccessor>();
-
-        // HttpContext providers
-        services.AddSingleton<IHttpContextProvider, DefaultHttpContextProvider>();
-        services.AddSingleton<IHttpContextProvider, ExecutionContextHttpContextProvider>();
-
-        // Composite comme implémentation de IHttpContextAccessor
-        services.AddSingleton<IHttpContextAccessor, CompositeHttpContextAccessor>();
+        // Contexte d'exécution via le package réutilisable
+        services.AddExecutionContext<DemoSyntheticHttpContextBuilder>();
 
         // Base de données
         services.AddDbContext<AppDbContext>(opt =>

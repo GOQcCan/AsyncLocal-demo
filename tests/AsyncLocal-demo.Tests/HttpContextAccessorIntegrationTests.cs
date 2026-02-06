@@ -1,6 +1,7 @@
+using AsyncLocal.ExecutionContext;
+using AsyncLocal.ExecutionContext.Abstractions;
 using AsyncLocal_demo.Core.Context;
 using AsyncLocal_demo.Infrastructure;
-using AsyncLocal_demo.Infrastructure.Context;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -50,8 +51,8 @@ public sealed class HttpContextAccessorIntegrationTests : IDisposable
         var httpContextAccessor = _serviceProvider.GetRequiredService<IHttpContextAccessor>();
 
         // Simule ce que fait le BackgroundService
-        executionContextAccessor.Current.UserId = "integration-user";
-        executionContextAccessor.Current.TenantId = "integration-tenant";
+        executionContextAccessor.Current.SetUserId("integration-user");
+        executionContextAccessor.Current.SetTenantId("integration-tenant");
         executionContextAccessor.Current.CorrelationId = "integration-corr";
 
         // Act - Simule un appel à une librairie externe utilisant IHttpContextAccessor

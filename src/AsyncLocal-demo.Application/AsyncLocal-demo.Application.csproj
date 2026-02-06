@@ -5,6 +5,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\package\AsyncLocal.ExecutionContext.Abstractions\AsyncLocal.ExecutionContext.Abstractions.csproj" />
     <ProjectReference Include="..\AsyncLocal-demo.Core\AsyncLocal-demo.Core.csproj" />
   </ItemGroup>
 
