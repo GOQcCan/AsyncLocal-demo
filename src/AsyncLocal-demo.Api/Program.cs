@@ -1,3 +1,4 @@
+using AsyncLocal.ExecutionContext;
 using AsyncLocal_demo.Api;
 using AsyncLocal_demo.Application;
 using AsyncLocal_demo.Infrastructure;
@@ -19,7 +20,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
 }
 
-app.UseExecutionContext();
+app.UseExecutionContext<ExecutionContextMiddleware>();
 app.MapControllers();
 
 await app.RunAsync();
