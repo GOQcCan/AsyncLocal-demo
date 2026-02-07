@@ -110,7 +110,6 @@ Le projet inclut un package réutilisable `AsyncLocal.ExecutionContext` qui four
 services.AddExecutionContext<DemoSyntheticHttpContextBuilder>();
 ```
 
-
 ## **BONUS:** Traitement en arrière-plan (Background Service)
 
 Cette démo inclut un système complet de traitement asynchrone en arrière-plan qui **préserve le contexte d'exécution** (`AsyncLocal<T>`) entre la requête HTTP et le worker.
@@ -138,8 +137,9 @@ Cette démo inclut un système complet de traitement asynchrone en arrière-plan
 ### Enregistrement des services
 ```csharp
 // Dans DependencyInjection.cs 
-services.AddSingleton<IBackgroundTaskQueue<Guid>>(sp => new BackgroundTaskQueue<Guid>( sp.GetRequiredService<IExecutionContext>(), capacity: 100));
-services.AddSingleton<OrderProcessingBackgroundService>(); services.TryAddEnumerable( ServiceDescriptor.Singleton<IHostedService, OrderProcessingBackgroundService>( sp => sp.GetRequiredService<OrderProcessingBackgroundService>()));
+services.AddSingleton<IBackgroundTaskQueue<Guid>>(sp => new BackgroundTaskQueue<Guid>(sp.GetRequiredService<IExecutionContext>(), capacity: 100));
+services.AddSingleton<OrderProcessingBackgroundService>(); 
+services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, OrderProcessingBackgroundService>( sp => sp.GetRequiredService<OrderProcessingBackgroundService>()));
 ```
 
 ### Utilisation dans le code
@@ -150,7 +150,6 @@ public async Task EnqueueForProcessingAsync(Guid orderId, CancellationToken ct =
     await processingQueue.EnqueueAsync(orderId, ct); 
 }
 ```
-
 
 ### Points clés pour la préservation du contexte
 
